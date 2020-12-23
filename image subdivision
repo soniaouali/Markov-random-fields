@@ -10,40 +10,31 @@ def subdivision(img_obs):
     Site_4= img_obs[1::2,1::2]
        
     #liste vide qui va regrouper tous les voisins de chaque site dans img_obs  
-    N1=[]
-    N2=[]
-    N3=[]
-    N4=[]
-    (S0,S1,S2)=img_obs.shape
-    (s0,s1,s2)=Site_1.shape
-    #ici on calcule pour chaque site ses voisins et on les stock dans liste_Nei_1 
-    for p_x in range(0,S0,2):
-        for p_y in range(0,S1,2):
-            N1.append(get_8_neighbors(img_obs,p_x,p_y))
-    N1=(np.array(N1)).reshape(s0,s1,s2*8)  
-     
-    for p_x in range(0,S0,2):
-        for p_y in range(1,S1,2):
-            N2.append(get_8_neighbors(img_obs,p_x,p_y))
-    N2=(np.array(N2)).reshape(s0,s1,s2*8)
+    liste_Nei=[]
     
-    for p_x in range(1,S0,2):
-        for p_y in range(0,S1,2):
-            N3.append(get_8_neighbors(img_obs,p_x,p_y))
-    N3=(np.array(N3)).reshape(s0,s1,s2*8)
-     
-    for p_x in range(1,S0,2):
-        for p_y in range(1,S1,2):
-            N4.append(get_8_neighbors(img_obs,p_x,p_y))
-    N4=(np.array(N4)).reshape(s0,s1,s2*8)      
-            
-
+    #ici on calcule pour chaque site ses voisins et on les stock dans liste_Nei_1 
+    for p_x in range(np.shape(img_obs)[1]):
+        for p_y in range(np.shape(img_obs)[0]):
+            liste_Nei.append(get_8_neighbors(img_obs,p_x,p_y))
+    
+    #On transforme la liste en un tableau de la même taille que l'image        
+    N=(np.array(liste_Nei)).reshape(np.shape(img_obs)[0],np.shape(img_obs)[1],np.shape(img_obs)[2]*8)
+    
+    N1= N[0::2,0::2] 
+    N2= N[1::2,0::2]
+    N3= N[0::2,1::2]
+    N4= N[1::2,1::2]
+#    print(N1.shape)
+ 
     
     Site_Nei_1=np.dstack((Site_1,N1))
+
     Site_Nei_2=np.dstack((Site_2,N2))
+
     Site_Nei_3=np.dstack((Site_3,N3))
+
     Site_Nei_4=np.dstack((Site_4,N4))
-    
-    sites =[Site_Nei_1, Site_Nei_2, Site_Nei_3, Site_Nei_4]
-    
+
+    sites =np.dstack((Site_Nei_1,Site_Nei_2,Site_Nei_3,Site_Nei_4))
+    sites=np.array(np.dsplit(sites, 4))
     return sites
