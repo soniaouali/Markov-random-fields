@@ -1,0 +1,89 @@
+def gibbs_chromatic(img_obs,sigma,moyennes,alpha,nbr_iter):
+        
+    # On va créer un champ aléatoire X0 qui va représenter le champ de départ
+    indices=np.arange(len(moyennes))
+#    print(indices)
+    #on utilise les indice parceque    
+    # la fonction random.choice prend en paramètre des valeurs 1D uniquement
+    
+    np.random.seed(0)#sert à fixer le vecteur aléatoire
+    
+    #un tableau de la taille de l'image rempli avec les indice des classes
+    tab=np.array(np.random.choice(indices, size=(img_obs.shape[0],img_obs.shape[1])))
+    #chaque indice est remplacé par la classe quii lui correspond pour obtenir un champ de départ
+    X=moyennes[tab]
+#    plt.imshow(X,cmap='gray')
+#    plt.show()
+    E=X
+    #Tableau vide qui va sauvegarder le calcul de la loi normale multivariée
+    gauss=np.empty([img_obs.shape[0],img_obs.shape[1],len(moyennes)])
+    
+    for j in range(len(moyennes)):
+#         gauss[:,:,j]=multivariate_normal.logpdf(np.swapaxes(img_obs,0,1),moyennes[j],sigma)
+          gauss[:,:,j]=multivariate_normal.logpdf(img_obs,moyennes[j],sigma)
+          
+    gauss=np.array((gauss[0::2,0::2],gauss[1::2,0::2],gauss[0::2,1::2],gauss[1::2,1::2]))
+    print(gauss.shape)
+    
+    
+    for iter in range(nbr_iter):
+        sites=subdivision(X)
+        print(sites.shape)
+        sites_indices=[]
+        for s in range(4):
+            site=sites[s,:,:,:] 
+#            print(site.shape)
+            p=[]
+            for c in range(len(moyennes)):           
+                site[:,:,:3]==moyennes[c]
+                neighbors=site[:,:,3:]
+                classes=np.tile(moyennes[c],(1,1,8))
+#                print(neighbors.shape, classes.shape)
+                potts=-alpha*((1-(2*(classes==neighbors))).sum(axis=2))
+                p_c=np.exp(np.add(potts,gauss[s,:,:,c]))
+                p.append(p_c)
+                
+            p=np.array(p)
+#            normalisation des probabilités
+            p=p/p.sum(axis=0)
+          
+            #selection de l'indice de la classe selon p et l'enregistrer sous forme de tableau
+            indices_matrix=np.empty((site.shape[0],site.shape[1],3))
+            for ligne in range(site.shape[0]):
+                for col in range(site.shape[1]):        
+                       indice=np.random.choice(indices,p=p[:,ligne,col])
+                       indices_matrix[ligne][col]=moyennes[indice]
+                       
+            sites_indices.append(indices_matrix.reshape(site.shape[1],site.shape[0],3))
+        sites_indices=np.array(sites_indices)
+#        recreating the original image
+        X[0::2,0::2]=sites_indices[0]
+        X[1::2,0::2]=sites_indices[1]
+        X[0::2,1::2]=sites_indices[2]
+        X[1::2,1::2]=sites_indices[3]
+           
+#        X[0::2,0::2]=np.swapaxes(sites_indices[0],0,1)
+#        X[1::2,0::2]=np.swapaxes(sites_indices[1],0,1)
+#        X[0::2,1::2]=np.swapaxes(sites_indices[2],0,1)
+#        X[1::2,1::2]=np.swapaxes(sites_indices[3],0,1)
+        
+        plt.imshow(X,cmap='gray')
+        plt.show()
+
+        E=np.dstack((E,X))
+              
+        (larg,long,prof)=E.shape
+        R=np.dsplit(E,int(prof/3)) #a=3 if RGB
+        
+        if iter>=10:
+            imgA=mode(R[len(R)-11:len(R)-2])[0]
+            imgB=R[-1]
+#       print(1-(imgB==imgA).mean())
+            
+            if 1-(imgB==imgA).mean()<=0.05:
+                X=mode(R[len(R)-10:len(R)-1])[0]
+                (xc,xl,xh,xp)=X.shape
+                X=np.reshape(X,(xl,xh,xp))
+                break
+     
+    return imgB,X
